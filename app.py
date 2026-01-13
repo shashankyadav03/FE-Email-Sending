@@ -131,7 +131,7 @@ if st.session_state.candidates:
 
     selected_rows = st.data_editor(
         df,
-        use_container_width=True,
+        width=1200,
         hide_index=True,
         column_config={
             "id": st.column_config.TextColumn("ID", disabled=True),
