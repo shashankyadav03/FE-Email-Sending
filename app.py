@@ -1,28 +1,23 @@
 import streamlit as st
 import requests
 import pandas as pd
-
-# --------------------------------
-# Azure Function Config
-# --------------------------------
-# ...existing code...
 from dotenv import load_dotenv
 import os
-load_dotenv()
 
 # --------------------------------
-# CONFIG – change only these
+# ENV SETUP
 # --------------------------------
+load_dotenv()
+
 FUNCTION_BASE = os.getenv("FUNCTION_BASE")
-FUNCTION_KEY  = os.getenv("FUNCTION_KEY")   # set in .env
+FUNCTION_KEY  = os.getenv("FUNCTION_KEY")
 
 CREATE_URL = f"{FUNCTION_BASE}/emails/create?code={FUNCTION_KEY}"
 SEND_URL   = f"{FUNCTION_BASE}/emails/send?code={FUNCTION_KEY}"
 HEALTH_URL = f"{FUNCTION_BASE}/health?code={FUNCTION_KEY}"
-# ...existing code...
 
 # --------------------------------
-# Hardcoded Candidates
+# HARDCODED CANDIDATES
 # --------------------------------
 hardcoded_candidates = [
     {
@@ -52,7 +47,7 @@ hardcoded_candidates = [
         "disability": "None",
         "educational_qualification": "Masters",
         "work_experience": "3",
-        "summary": "Recuiter with 3 years of experience in talent acquisition and human resources.",
+        "summary": "Recruiter with 3 years of experience in talent acquisition and human resources.",
         "id": "300"
     },
     {
@@ -62,7 +57,7 @@ hardcoded_candidates = [
         "disability": "None",
         "educational_qualification": "Bachelors",
         "work_experience": "4",
-        "summary": "Recuiter with 4 years of experience in recruitment and talent management.",
+        "summary": "Recruiter with 4 years of experience in recruitment and talent management.",
         "id": "400"
     },
     {
@@ -82,20 +77,23 @@ hardcoded_candidates = [
         "disability": "None",
         "educational_qualification": "Bachelors",
         "work_experience": "2",
-        "summary": "Top recuiter with 3 years of experience in sourcing and hiring top talent.",
+        "summary": "Top recruiter with 3 years of experience in sourcing and hiring top talent.",
         "id": "600"
     }
 ]
 
 # --------------------------------
-# Session State
+# SESSION STATE
 # --------------------------------
 if "candidates" not in st.session_state:
     st.session_state.candidates = []
+
 if "selected" not in st.session_state:
     st.session_state.selected = []
+
 if "generated_emails" not in st.session_state:
     st.session_state.generated_emails = []
+
 if "job_id" not in st.session_state:
     st.session_state.job_id = None
 
@@ -103,23 +101,30 @@ if "job_id" not in st.session_state:
 # UI
 # --------------------------------
 st.set_page_config("AI Recruiter", layout="wide")
-st.title("🤖 AI Candidate Outreach")
+st.title("🤖 AI Candidate Outreach (Service 1 Tester)")
 
 # --------------------------------
-# Health Check
+# HEALTH CHECK
 # --------------------------------
 with st.sidebar:
+    st.subheader("API")
     if st.button("Check API Health"):
-        r = requests.get(HEALTH_URL)
-        st.json(r.json())
+        try:
+            r = requests.get(HEALTH_URL, timeout=10)
+            st.json(r.json())
+        except Exception as e:
+            st.error(str(e))
 
 # --------------------------------
-# Job Description
+# JOB DESCRIPTION
 # --------------------------------
-job_desc = st.text_area("Job Description", "We are hiring a recruiter with 3–5 years experience.")
+job_desc = st.text_area(
+    "Job Description",
+    "We are hiring a recruiter with 3–5 years experience."
+)
 
 # --------------------------------
-# Search Candidates (hardcoded)
+# LOAD CANDIDATES
 # --------------------------------
 if st.button("🔍 Search Candidates"):
     st.session_state.candidates = hardcoded_candidates
@@ -129,20 +134,19 @@ if st.session_state.candidates:
 
     st.subheader("Candidate List")
 
-    selected_rows = st.data_editor(
+    st.data_editor(
         df,
         width=1200,
         hide_index=True,
         column_config={
             "id": st.column_config.TextColumn("ID", disabled=True),
-            "name": st.column_config.TextColumn("Name"),
-            "email": st.column_config.TextColumn("Email"),
+            "name": "Name",
+            "email": "Email",
             "location_preference": "Location",
             "educational_qualification": "Education",
             "work_experience": "Experience",
             "summary": "Summary"
-        },
-        key="candidate_table"
+        }
     )
 
     st.session_state.selected = st.multiselect(
@@ -153,7 +157,7 @@ if st.session_state.candidates:
     st.info(f"Selected {len(st.session_state.selected)} candidates")
 
 # --------------------------------
-# Generate Emails
+# GENERATE EMAILS
 # --------------------------------
 if st.button("🚀 Generate AI Emails"):
     if not st.session_state.selected:
@@ -176,33 +180,41 @@ if st.button("🚀 Generate AI Emails"):
         }
 
         with st.spinner("Generating emails..."):
-            r = requests.post(CREATE_URL, json=payload)
-            data = r.json()
+            try:
+                r = requests.post(CREATE_URL, json=payload, timeout=60)
+                data = r.json()
+            except Exception as e:
+                st.error(str(e))
+                data = {}
 
             if data.get("success"):
-                st.session_state.generated_emails = data["emails"]
-                st.session_state.job_id = data["job_id"]
-                st.success(f"Generated {len(data['emails'])} personalized emails")
+                st.session_state.generated_emails = data.get("emails", [])
+                st.session_state.job_id = data.get("job_id")
+                st.success(f"Generated {len(st.session_state.generated_emails)} emails")
             else:
-                st.error(data.get("error"))
+                st.error(data.get("error", "Failed to generate emails"))
 
 # --------------------------------
-# Preview & Edit
+# PREVIEW & EDIT EMAILS
 # --------------------------------
 if st.session_state.generated_emails:
-    st.subheader("✏️ Review Emails")
+    st.subheader("✏️ Review & Edit Emails")
 
     for i, email in enumerate(st.session_state.generated_emails):
         with st.expander(email["email"]):
-            email["subject"] = st.text_input("Subject", email["subject"], key=f"s{i}")
-            email["body"] = st.text_area("Body", email["body"], height=200, key=f"b{i}")
+            email["subject"] = st.text_input(
+                "Subject", email["subject"], key=f"subject_{i}"
+            )
+            email["body"] = st.text_area(
+                "Body", email["body"], height=220, key=f"body_{i}"
+            )
 
 # --------------------------------
-# Send Emails
+# SEND EMAILS
 # --------------------------------
 if st.button("✅ Send Emails"):
     if not st.session_state.generated_emails:
-        st.error("No emails generated")
+        st.error("No emails to send")
     else:
         payload = {
             "job_id": st.session_state.job_id,
@@ -210,11 +222,28 @@ if st.button("✅ Send Emails"):
         }
 
         with st.spinner("Sending emails..."):
-            r = requests.post(SEND_URL, json=payload)
-            data = r.json()
+            try:
+                r = requests.post(SEND_URL, json=payload, timeout=60)
+                data = r.json()
+            except Exception as e:
+                st.error(str(e))
+                data = {}
 
-            if data.get("success"):
-                st.success(f"Sent {data['emails_sent']} emails")
-                st.session_state.generated_emails = []
+        if data.get("success"):
+            # Safe count handling (NO KeyError)
+            if "emails_sent" in data:
+                sent_count = data["emails_sent"]
+            elif "details" in data and isinstance(data["details"], list):
+                sent_count = len(data["details"])
             else:
-                st.error(data.get("error"))
+                sent_count = len(st.session_state.generated_emails)
+
+            st.success(f"Sent {sent_count} emails")
+
+            if data.get("details"):
+                st.subheader("📬 Delivery Status")
+                st.table(pd.DataFrame(data["details"]))
+
+            st.session_state.generated_emails = []
+        else:
+            st.error(data.get("error", "Failed to send emails"))
