@@ -170,7 +170,7 @@ if st.button("🚀 Generate AI Emails"):
 
         payload = {
             "job": {
-                "title": "job_desc",
+                "title": job_desc,
                 "description": job_desc,
                 "company_name": "Atypical Advantage",
                 "location": "India",
