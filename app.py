@@ -51,8 +51,8 @@ hardcoded_candidates = [
         "id": "300"
     },
     {
-        "name": "Preeti",
-        "email": "Preeti@atypicaladvantage.in",
+        "name": "Shashank",
+        "email": "shashdevacc@gmail.com",
         "location_preference": "Hyderabad",
         "disability": "None",
         "educational_qualification": "Bachelors",
