@@ -154,5 +154,39 @@ class TestGetConversationThread(unittest.TestCase):
         self.assertEqual(result["status"]["interest_status"], "interested")
 
 
+class TestGetAvgResponseTime(unittest.TestCase):
+    def test_no_client_returns_dash(self):
+        from src.db import get_avg_response_time
+        with patch("src.db._client", return_value=None):
+            get_avg_response_time.clear()
+            result = get_avg_response_time()
+        self.assertEqual(result, "—")
+
+    def test_no_replies_returns_dash(self):
+        sb = _make_sb({
+            "conversation_emails": [
+                {"conversation_id": "c1", "direction": "outbound", "created_at": "2024-01-01T10:00:00Z"},
+            ],
+        })
+        from src.db import get_avg_response_time
+        with patch("src.db._client", return_value=sb):
+            get_avg_response_time.clear()
+            result = get_avg_response_time()
+        self.assertEqual(result, "—")
+
+    def test_returns_formatted_minutes(self):
+        sb = _make_sb({
+            "conversation_emails": [
+                {"conversation_id": "c1", "direction": "outbound", "created_at": "2024-01-01T10:00:00+00:00"},
+                {"conversation_id": "c1", "direction": "inbound",  "created_at": "2024-01-01T10:30:00+00:00"},
+            ],
+        })
+        from src.db import get_avg_response_time
+        with patch("src.db._client", return_value=sb):
+            get_avg_response_time.clear()
+            result = get_avg_response_time()
+        self.assertRegex(result, r"^\d+m$")
+
+
 if __name__ == "__main__":
     unittest.main()

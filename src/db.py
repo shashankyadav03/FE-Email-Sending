@@ -50,12 +50,21 @@ def get_dashboard_metrics() -> dict[str, Any]:
     if not sb:
         return _empty_metrics()
     try:
-        sent_r   = sb.table("conversation_emails").select("id", count="exact").eq("direction", "outbound").execute()
-        recv_r   = sb.table("conversation_emails").select("id", count="exact").eq("direction", "inbound").execute()
-        conv_r   = sb.table("conversations").select("id", count="exact").execute()
-        opens_r  = sb.table("email_opens").select("id", count="exact").execute()
-        inter_r  = sb.table("conversation_status").select("id", count="exact").eq("interest_status", "interested").execute()
-        unsub_r  = sb.table("email_unsubscribes").select("id", count="exact").execute()
+        today_start = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ).isoformat()
+        week_start = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+
+        sent_r        = sb.table("conversation_emails").select("id", count="exact").eq("direction", "outbound").execute()
+        recv_r        = sb.table("conversation_emails").select("id", count="exact").eq("direction", "inbound").execute()
+        conv_r        = sb.table("conversations").select("id", count="exact").execute()
+        opens_r       = sb.table("email_opens").select("id", count="exact").execute()
+        inter_r       = sb.table("conversation_status").select("id", count="exact").eq("interest_status", "interested").execute()
+        unsub_r       = sb.table("email_unsubscribes").select("id", count="exact").execute()
+        sent_today_r  = sb.table("conversation_emails").select("id", count="exact").eq("direction", "outbound").gte("created_at", today_start).execute()
+        recv_today_r  = sb.table("conversation_emails").select("id", count="exact").eq("direction", "inbound").gte("created_at", today_start).execute()
+        sent_week_r   = sb.table("conversation_emails").select("id", count="exact").eq("direction", "outbound").gte("created_at", week_start).execute()
+        recv_week_r   = sb.table("conversation_emails").select("id", count="exact").eq("direction", "inbound").gte("created_at", week_start).execute()
 
         total_sent    = _count(sent_r)
         total_recv    = _count(recv_r)
@@ -64,26 +73,33 @@ def get_dashboard_metrics() -> dict[str, Any]:
         total_inter   = _count(inter_r)
         total_unsub   = _count(unsub_r)
 
-        # Unique conversations that received a reply
         replied_rows = _safe(sb.table("conversation_emails")
                                .select("conversation_id")
                                .eq("direction", "inbound")
                                .execute())
         replied_convs = len({r["conversation_id"] for r in replied_rows if r.get("conversation_id")})
 
+        active_rows = _safe(sb.table("conversations").select("job_id").eq("status", "open").execute())
+        active_campaigns = len({r["job_id"] for r in active_rows if r.get("job_id")})
+
         open_rate     = round(total_opens / total_sent * 100, 1) if total_sent else 0.0
         response_rate = round(replied_convs / total_sent * 100, 1) if total_sent else 0.0
 
         return {
-            "total_sent":      total_sent,
-            "total_received":  total_recv,
-            "total_convs":     total_convs,
-            "total_opens":     total_opens,
-            "total_interested": total_inter,
-            "total_unsub":     total_unsub,
-            "replied_convs":   replied_convs,
-            "open_rate":       open_rate,
-            "response_rate":   response_rate,
+            "total_sent":        total_sent,
+            "total_received":    total_recv,
+            "total_convs":       total_convs,
+            "total_opens":       total_opens,
+            "total_interested":  total_inter,
+            "total_unsub":       total_unsub,
+            "replied_convs":     replied_convs,
+            "open_rate":         open_rate,
+            "response_rate":     response_rate,
+            "sent_today":        _count(sent_today_r),
+            "recv_today":        _count(recv_today_r),
+            "sent_week":         _count(sent_week_r),
+            "recv_week":         _count(recv_week_r),
+            "active_campaigns":  active_campaigns,
         }
     except Exception as exc:
         logger.exception("get_dashboard_metrics failed: %s", exc)
@@ -94,7 +110,55 @@ def _empty_metrics():
     return {k: 0 for k in [
         "total_sent", "total_received", "total_convs", "total_opens",
         "total_interested", "total_unsub", "replied_convs", "open_rate", "response_rate",
+        "sent_today", "recv_today", "sent_week", "recv_week", "active_campaigns",
     ]}
+
+
+@st.cache_data(ttl=300)
+def get_avg_response_time() -> str:
+    """Average time between first outbound and first inbound per conversation, human-readable."""
+    sb = _client()
+    if not sb:
+        return "—"
+    try:
+        rows = _safe(sb.table("conversation_emails")
+                       .select("conversation_id, direction, created_at")
+                       .order("created_at", desc=False)
+                       .execute())
+        first_out: dict[str, str] = {}
+        first_in:  dict[str, str] = {}
+        for r in rows:
+            cid = r.get("conversation_id")
+            if not cid:
+                continue
+            if r.get("direction") == "outbound" and cid not in first_out:
+                first_out[cid] = r["created_at"]
+            elif r.get("direction") == "inbound" and cid not in first_in:
+                first_in[cid] = r["created_at"]
+
+        deltas = []
+        for cid, out_ts in first_out.items():
+            if cid in first_in:
+                try:
+                    t_out = datetime.fromisoformat(out_ts.replace("Z", "+00:00"))
+                    t_in  = datetime.fromisoformat(first_in[cid].replace("Z", "+00:00"))
+                    delta = (t_in - t_out).total_seconds()
+                    if delta > 0:
+                        deltas.append(delta)
+                except Exception:
+                    pass
+
+        if not deltas:
+            return "—"
+        avg = sum(deltas) / len(deltas)
+        if avg < 3600:
+            return f"{int(avg / 60)}m"
+        if avg < 86400:
+            return f"{avg / 3600:.1f}h"
+        return f"{avg / 86400:.1f}d"
+    except Exception as exc:
+        logger.exception("get_avg_response_time failed: %s", exc)
+        return "—"
 
 
 @st.cache_data(ttl=300)

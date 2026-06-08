@@ -79,6 +79,7 @@ class TestModuleImports(unittest.TestCase):
         self.assertTrue(hasattr(src.db, "get_all_conversations"))
         self.assertTrue(hasattr(src.db, "get_conversation_thread"))
         self.assertTrue(hasattr(src.db, "get_all_jobs"))
+        self.assertTrue(hasattr(src.db, "get_avg_response_time"))
 
     def test_import_api(self):
         import src.api
@@ -124,6 +125,7 @@ class TestDBEmptyReturns(unittest.TestCase):
             self._db.get_all_jobs,
             self._db.get_all_conversations,
             self._db.get_conversation_thread,
+            self._db.get_avg_response_time,
         ):
             fn.clear()
 
@@ -132,7 +134,8 @@ class TestDBEmptyReturns(unittest.TestCase):
             self._clear_all()
             result = self._db.get_dashboard_metrics()
         self.assertIsInstance(result, dict)
-        for key in ("total_sent", "total_received", "open_rate", "response_rate"):
+        for key in ("total_sent", "total_received", "open_rate", "response_rate",
+                    "sent_today", "recv_today", "sent_week", "recv_week", "active_campaigns"):
             self.assertIn(key, result)
 
     def test_sent_emails_no_client(self):
@@ -167,19 +170,20 @@ class TestDBEmptyReturns(unittest.TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4. Dashboard: metrics shape always has all 9 required keys
+# 4. Dashboard: metrics shape always has all required keys
 # ─────────────────────────────────────────────────────────────────────────────
 class TestDashboardLoading(unittest.TestCase):
     _REQUIRED_KEYS = {
         "total_sent", "total_received", "total_convs", "total_opens",
         "total_interested", "total_unsub", "replied_convs",
         "open_rate", "response_rate",
+        "sent_today", "recv_today", "sent_week", "recv_week", "active_campaigns",
     }
 
     def test_metrics_shape_with_data(self):
         sb = _make_sb({
             "conversation_emails": [{"id": "e1", "direction": "outbound", "conversation_id": "c1"}],
-            "conversations":       [{"id": "c1"}],
+            "conversations":       [{"id": "c1", "status": "open", "job_id": "j1"}],
             "email_opens":         [{"id": "o1"}],
             "conversation_status": [{"id": "s1", "interest_status": "interested"}],
             "email_unsubscribes":  [],
@@ -196,6 +200,25 @@ class TestDashboardLoading(unittest.TestCase):
             get_dashboard_metrics.clear()
             result = get_dashboard_metrics()
         self.assertEqual(set(result.keys()), self._REQUIRED_KEYS)
+
+    def test_active_campaigns_counts_unique_job_ids(self):
+        sb = _make_sb({
+            "conversation_emails": [],
+            "conversations": [
+                {"id": "c1", "status": "open", "job_id": "j1"},
+                {"id": "c2", "status": "open", "job_id": "j1"},
+                {"id": "c3", "status": "open", "job_id": "j2"},
+            ],
+            "email_opens": [],
+            "conversation_status": [],
+            "email_unsubscribes": [],
+        })
+        from src.db import get_dashboard_metrics
+        with patch("src.db._client", return_value=sb):
+            get_dashboard_metrics.clear()
+            result = get_dashboard_metrics()
+        # 2 unique job_ids across 3 open conversations
+        self.assertEqual(result["active_campaigns"], 2)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

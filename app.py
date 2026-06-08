@@ -26,11 +26,9 @@ st.markdown("""
 
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-/* Hide Streamlit chrome */
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding-top: 1.8rem !important; }
 
-/* ── Sidebar ── */
 section[data-testid="stSidebar"] {
     background: #0F172A !important;
     border-right: 1px solid #1E293B;
@@ -50,28 +48,25 @@ section[data-testid="stSidebar"] button:hover {
     color: #F8FAFC !important;
 }
 
-/* ── Metric cards ── */
 .kpi-card {
     background: #FFFFFF;
     border-radius: 14px;
-    padding: 22px 20px 18px;
+    padding: 20px 18px 16px;
     border: 1px solid #E2E8F0;
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
-    height: 130px;
+    min-height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
-.kpi-icon  { font-size: 22px; }
-.kpi-value { font-size: 34px; font-weight: 800; color: #1E293B; line-height: 1; }
-.kpi-label { font-size: 12px; font-weight: 600; color: #64748B; letter-spacing: .4px; text-transform: uppercase; }
+.kpi-icon  { font-size: 20px; }
+.kpi-value { font-size: 32px; font-weight: 800; color: #1E293B; line-height: 1; }
+.kpi-label { font-size: 11.5px; font-weight: 600; color: #64748B; letter-spacing: .4px; text-transform: uppercase; }
 .kpi-sub   { font-size: 11px; color: #94A3B8; margin-top: 2px; }
 
-/* ── Section headings ── */
 .sec-title { font-size: 19px; font-weight: 700; color: #1E293B; margin-bottom: 2px; }
 .sec-sub   { font-size: 13px; color: #64748B; margin-bottom: 18px; }
 
-/* ── Status badges ── */
 .badge {
     display: inline-block;
     padding: 2px 10px;
@@ -92,7 +87,6 @@ section[data-testid="stSidebar"] button:hover {
 .badge-opened         { background:#FEF3C7; color:#92400E; }
 .badge-sent           { background:#EFF6FF; color:#3B82F6; }
 
-/* ── Email thread bubbles ── */
 .bubble-out {
     background: #EFF6FF;
     border-left: 3px solid #3B82F6;
@@ -119,7 +113,6 @@ section[data-testid="stSidebar"] button:hover {
 .bubble-date { font-size: 11px; color: #94A3B8; float: right; }
 .bubble-body { font-size: 13.5px; color: #334155; white-space: pre-wrap; margin-top: 4px; }
 
-/* ── Body preview (single-line, italic, truncated) ── */
 .body-preview {
     font-size: 13px;
     color: #64748B;
@@ -131,10 +124,8 @@ section[data-testid="stSidebar"] button:hover {
     padding: 3px 0 6px;
 }
 
-/* ── Dividers ── */
-.divider { border: none; border-top: 1px solid #E2E8F0; margin: 18px 0; }
+.divider { border: none; border-top: 1px solid #E2E8F0; margin: 14px 0; }
 
-/* ── Status box (conversation summary) ── */
 .status-box {
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
@@ -149,7 +140,6 @@ section[data-testid="stSidebar"] button:hover {
 }
 .status-box strong { color: #1E293B; }
 
-/* ── Conversation token chip ── */
 .conv-token {
     font-size: 11px;
     font-family: monospace;
@@ -160,7 +150,6 @@ section[data-testid="stSidebar"] button:hover {
     display: inline-block;
 }
 
-/* ── Compose section ── */
 .compose-notice {
     background: #FFF7ED;
     border: 1px solid #FED7AA;
@@ -171,10 +160,19 @@ section[data-testid="stSidebar"] button:hover {
     margin-bottom: 20px;
 }
 
-/* ── Responsive / mobile ── */
+.page-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 0 4px;
+    font-size: 13px;
+    color: #64748B;
+}
+
 @media (max-width: 768px) {
     .block-container { padding: 1rem 0.75rem !important; }
-    .kpi-card { height: auto !important; min-height: 90px; padding: 14px 12px !important; }
+    .kpi-card { min-height: auto !important; padding: 14px 12px !important; }
     .kpi-value { font-size: 26px !important; }
     .kpi-label { font-size: 11px !important; }
     .sec-title { font-size: 16px !important; }
@@ -204,11 +202,36 @@ if not check_password():
     st.stop()
 
 
+# ── Constants ─────────────────────────────────────────────────────────────────
+_EMPTY    = "—"
+PAGE_SIZE = 25
+
+days_map = {"All time": 0, "Last 7 days": 7, "Last 30 days": 30, "Last 90 days": 90}
+
+_CONV_STATUS = {
+    "open":                ("badge-open",           "Open"),
+    "closed":              ("badge-closed",          "Closed"),
+    "needs_clarification": ("badge-needs",           "Needs Review"),
+}
+_INTEREST = {
+    "interested":          ("badge-interested",      "Interested"),
+    "not_interested":      ("badge-not-interested",  "Not Interested"),
+    "unsure":              ("badge-needs",            "Unsure"),
+}
+_MATCH = {
+    "subject_token":       ("badge-token",    "Token Match"),
+    "in_reply_to":         ("badge-header",   "Header Match"),
+    "references":          ("badge-header",   "Ref Match"),
+    "sender_fuzzy":        ("badge-fuzzy",    "Fuzzy Match"),
+    "none":                ("badge-unmatched","Unmatched"),
+}
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def fmt_dt(iso_str: str, short: bool = False) -> str:
     if not iso_str:
-        return "—"
+        return _EMPTY
     try:
         dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00")).astimezone(timezone.utc)
         return dt.strftime("%b %d, %Y") if short else dt.strftime("%b %d, %Y  ·  %I:%M %p UTC")
@@ -216,8 +239,8 @@ def fmt_dt(iso_str: str, short: bool = False) -> str:
         return iso_str
 
 
-def _body_preview(body: str, max_chars: int = 120) -> str:
-    """Return first non-empty line of body, truncated to max_chars."""
+def _body_preview(body: str, max_chars: int = 140) -> str:
+    """First non-empty line of body, truncated to max_chars."""
     if not body:
         return ""
     for line in body.splitlines():
@@ -228,13 +251,28 @@ def _body_preview(body: str, max_chars: int = 120) -> str:
 
 
 def _after_cutoff(iso_str: str, cutoff) -> bool:
-    """True if the ISO timestamp is at or after cutoff (None cutoff → always True)."""
     if not iso_str or cutoff is None:
         return True
     try:
         return datetime.fromisoformat(iso_str.replace("Z", "+00:00")) >= cutoff
     except Exception:
         return True
+
+
+def _section_header(title: str, sub: str = "") -> None:
+    st.markdown(f'<div class="sec-title">{title}</div>', unsafe_allow_html=True)
+    if sub:
+        st.markdown(f'<div class="sec-sub">{sub}</div>', unsafe_allow_html=True)
+
+
+def _bubble_html(cls: str, label: str, body: str, ts: str = "") -> str:
+    date_span = f'<span class="bubble-date">{ts}</span>' if ts else ""
+    return (
+        f'<div class="{cls}">'
+        f'<div class="bubble-label">{label}{date_span}</div>'
+        f'<div class="bubble-body">{body}</div>'
+        f'</div>'
+    )
 
 
 def kpi_card(col, icon: str, value, label: str, sub: str = "", color: str = "#2563EB"):
@@ -249,46 +287,54 @@ def kpi_card(col, icon: str, value, label: str, sub: str = "", color: str = "#25
     </div>""", unsafe_allow_html=True)
 
 
-_CONV_STATUS = {
-    "open":               ("badge-open",           "Open"),
-    "closed":             ("badge-closed",          "Closed"),
-    "needs_clarification":("badge-needs",           "Needs Review"),
-}
-_INTEREST = {
-    "interested":         ("badge-interested",      "Interested"),
-    "not_interested":     ("badge-not-interested",  "Not Interested"),
-    "unsure":             ("badge-needs",           "Unsure"),
-}
-_MATCH = {
-    "subject_token":      ("badge-token",    "Token Match"),
-    "in_reply_to":        ("badge-header",   "Header Match"),
-    "references":         ("badge-header",   "Ref Match"),
-    "sender_fuzzy":       ("badge-fuzzy",    "Fuzzy Match"),
-    "none":               ("badge-unmatched","Unmatched"),
-}
-
-
 def badge(cls: str, label: str) -> str:
     return f'<span class="badge {cls}">{label}</span>'
 
 
-def conv_badge(status: str) -> str:
-    cls, lbl = _CONV_STATUS.get(status, ("badge-open", status or "—"))
-    return badge(cls, lbl)
+def _make_badge_fn(lookup: dict):
+    def fn(status: str) -> str:
+        cls, lbl = lookup.get(status, ("badge-open", status or _EMPTY))
+        return badge(cls, lbl)
+    return fn
 
 
-def interest_badge(status: str) -> str:
-    cls, lbl = _INTEREST.get(status, ("badge-needs", status or "—"))
-    return badge(cls, lbl)
+conv_badge     = _make_badge_fn(_CONV_STATUS)
+interest_badge = _make_badge_fn(_INTEREST)
+match_badge    = _make_badge_fn(_MATCH)
 
 
-def match_badge(matched_by: str) -> str:
-    cls, lbl = _MATCH.get(matched_by, ("badge-unmatched", matched_by or "—"))
-    return badge(cls, lbl)
+def _paginate(items: list, page_key: str, filter_sig: str) -> tuple[list, int, int]:
+    """Slice items for current page; reset to page 0 when filters change."""
+    if st.session_state.get(f"{page_key}_fsig") != filter_sig:
+        st.session_state[f"{page_key}_fsig"] = filter_sig
+        st.session_state[page_key] = 0
+    total_pages = max(1, (len(items) + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(0, min(st.session_state.get(page_key, 0), total_pages - 1))
+    st.session_state[page_key] = page
+    return items[page * PAGE_SIZE : (page + 1) * PAGE_SIZE], page, total_pages
+
+
+def _pagination_controls(page: int, total_pages: int, page_key: str, total_items: int) -> None:
+    if total_pages <= 1:
+        return
+    p1, p2, p3 = st.columns([1, 4, 1])
+    if p1.button("← Prev", key=f"{page_key}_prev", disabled=(page == 0)):
+        st.session_state[page_key] = page - 1
+        st.rerun()
+    start = page * PAGE_SIZE + 1
+    end   = min((page + 1) * PAGE_SIZE, total_items)
+    p2.markdown(
+        f"<div style='text-align:center;padding-top:8px;font-size:13px;color:#64748B'>"
+        f"Showing <b>{start}–{end}</b> of <b>{total_items}</b> &nbsp;·&nbsp; "
+        f"Page <b>{page + 1}</b> of <b>{total_pages}</b></div>",
+        unsafe_allow_html=True,
+    )
+    if p3.button("Next →", key=f"{page_key}_next", disabled=(page == total_pages - 1)):
+        st.session_state[page_key] = page + 1
+        st.rerun()
 
 
 def _render_thread(thread: dict):
-    """Render a full chronological conversation thread (messages + status summary)."""
     if thread["messages"]:
         st.markdown(
             "<p style='font-size:12px;font-weight:600;color:#64748B;margin-bottom:8px'>CONVERSATION THREAD</p>",
@@ -299,27 +345,20 @@ def _render_thread(thread: dict):
             cls      = "bubble-out" if is_out else "bubble-in"
             lbl      = "Sent by Recruiter" if is_out else "Candidate Reply"
             body_txt = (msg.get("body_text") or "").strip()
-            ts       = fmt_dt(msg.get("created_at"), short=False)
-            st.markdown(f"""
-            <div class="{cls}">
-                <div class="bubble-label">
-                    {lbl}
-                    <span class="bubble-date">{ts}</span>
-                </div>
-                <div class="bubble-body">{body_txt}</div>
-            </div>""", unsafe_allow_html=True)
+            ts       = fmt_dt(msg.get("created_at"))
+            st.markdown(_bubble_html(cls, lbl, body_txt, ts), unsafe_allow_html=True)
     else:
         st.info("No messages in this thread yet.")
 
     status = thread.get("status", {})
     if status:
         fields = {
-            "interest_status":       ("Interest",    interest_badge),
-            "availability":           ("Availability", None),
-            "jd_confirmation":        ("JD Match",    None),
-            "matching_skills":        ("Skills",      None),
-            "resume_received":        ("Resume",      None),
-            "conversation_complete":  ("Complete",    None),
+            "interest_status":      ("Interest",     interest_badge),
+            "availability":          ("Availability", None),
+            "jd_confirmation":       ("JD Match",     None),
+            "matching_skills":       ("Skills",       None),
+            "resume_received":       ("Resume",       None),
+            "conversation_complete": ("Complete",     None),
         }
         parts = []
         for key, (label, fmt_fn) in fields.items():
@@ -348,7 +387,8 @@ with st.sidebar:
 
     st.divider()
     st.markdown(
-        f"<p style='font-size:11px;color:#475569!important'>Last refresh: {datetime.now().strftime('%H:%M:%S')}</p>",
+        f"<p style='font-size:11px;color:#475569!important'>Last refresh: "
+        f"{datetime.now(timezone.utc).strftime('%H:%M UTC')}</p>",
         unsafe_allow_html=True,
     )
 
@@ -390,30 +430,38 @@ tab_dash, tab_sent, tab_inbox, tab_convs, tab_compose = st.tabs([
     "✉️   Compose & Test",
 ])
 
-days_map = {"All time": 0, "Last 7 days": 7, "Last 30 days": 30, "Last 90 days": 90}
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 1  ·  DASHBOARD
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_dash:
-    st.markdown('<div class="sec-title">Overview</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="sec-sub">Live metrics from the shared Supabase database · refreshes every 5 min</div>',
-        unsafe_allow_html=True,
-    )
+    _section_header("Overview", "Live KPIs from Supabase · auto-refreshes every 5 minutes")
 
     metrics = db.get_dashboard_metrics()
+    avg_rt  = db.get_avg_response_time()
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    kpi_card(c1, "📤", metrics["total_sent"],           "Emails Sent",     f"{metrics['total_convs']} conversations",    "#2563EB")
-    kpi_card(c2, "📥", metrics["total_received"],       "Replies Received", f"{metrics['replied_convs']} threads replied", "#16A34A")
-    kpi_card(c3, "👁️", f"{metrics['open_rate']}%",     "Open Rate",        f"{metrics['total_opens']} tracked opens",     "#7C3AED")
-    kpi_card(c4, "💬", f"{metrics['response_rate']}%", "Response Rate",    "replies ÷ sent",                              "#EA580C")
-    kpi_card(c5, "⭐", metrics["total_interested"],     "Interested",       f"{metrics['total_unsub']} unsubscribed",      "#0891B2")
+    # ── Row 1: Core KPIs ────────────────────────────────────────────────────
+    r1c1, r1c2, r1c3, r1c4, r1c5, r1c6 = st.columns(6)
+    kpi_card(r1c1, "📤", metrics["total_sent"],            "Emails Sent",        f"{metrics['total_convs']} conversations",    "#2563EB")
+    kpi_card(r1c2, "📥", metrics["total_received"],        "Replies Received",   f"{metrics['replied_convs']} threads replied", "#16A34A")
+    kpi_card(r1c3, "💬", f"{metrics['response_rate']}%",  "Reply Rate",         "replies ÷ emails sent",                      "#7C3AED")
+    kpi_card(r1c4, "👁️", f"{metrics['open_rate']}%",      "Open Rate",          f"{metrics['total_opens']} tracked opens",    "#EA580C")
+    kpi_card(r1c5, "⭐", metrics["total_interested"],      "Interested",         f"{metrics['total_unsub']} unsubscribed",     "#0891B2")
+    kpi_card(r1c6, "🗂️", metrics["active_campaigns"],     "Active Campaigns",   "jobs with open conversations",               "#059669")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # ── Row 2: Time-period KPIs ──────────────────────────────────────────────
+    r2c1, r2c2, r2c3, r2c4, r2c5 = st.columns(5)
+    kpi_card(r2c1, "📅", metrics["sent_today"],   "Sent Today",         "outbound emails",           "#3B82F6")
+    kpi_card(r2c2, "💌", metrics["recv_today"],   "Replies Today",      "inbound emails",            "#22C55E")
+    kpi_card(r2c3, "📆", metrics["sent_week"],    "Sent This Week",     "last 7 days",               "#6366F1")
+    kpi_card(r2c4, "📨", metrics["recv_week"],    "Replies This Week",  "last 7 days",               "#10B981")
+    kpi_card(r2c5, "⏱️", avg_rt,                  "Avg Response Time",  "first reply after outreach","#F59E0B")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Row 3: Charts ────────────────────────────────────────────────────────
     col_trend, col_jobs = st.columns([3, 2], gap="large")
 
     with col_trend:
@@ -437,7 +485,7 @@ with tab_dash:
                     marker=dict(size=5), fill="tozeroy", fillcolor="rgba(34,197,94,0.08)",
                 ))
             fig.update_layout(
-                template="plotly_white", height=240,
+                template="plotly_white", height=260,
                 margin=dict(l=0, r=0, t=10, b=0),
                 legend=dict(orientation="h", y=1.08, x=0),
                 xaxis=dict(showgrid=False, title=None),
@@ -449,19 +497,27 @@ with tab_dash:
             st.info("No email data in the last 30 days.")
 
     with col_jobs:
-        st.markdown('<div class="sec-title" style="font-size:15px">Campaign Performance</div>',
+        st.markdown('<div class="sec-title" style="font-size:15px">Top Campaigns by Response Rate</div>',
                     unsafe_allow_html=True)
         jstats = db.get_job_stats()
         if jstats:
-            df_j = pd.DataFrame(jstats[:8])
-            df_j["job_short"] = df_j["job"].apply(lambda x: (x[:28] + "…") if len(x) > 28 else x)
+            top = sorted(jstats, key=lambda x: x["response_rate"], reverse=True)[:10]
+            df_j = pd.DataFrame(top)
+            df_j["label"] = df_j["job"].apply(lambda x: (x[:26] + "…") if len(x) > 26 else x)
+            df_j["rate_color"] = df_j["response_rate"].apply(
+                lambda r: "#16A34A" if r >= 30 else "#EA580C" if r >= 10 else "#94A3B8"
+            )
             fig2 = go.Figure()
-            fig2.add_trace(go.Bar(y=df_j["job_short"], x=df_j["total"],  name="Sent",
-                                  orientation="h", marker_color="#3B82F6", marker_line_width=0))
-            fig2.add_trace(go.Bar(y=df_j["job_short"], x=df_j["replied"], name="Replied",
-                                  orientation="h", marker_color="#22C55E", marker_line_width=0))
+            fig2.add_trace(go.Bar(
+                y=df_j["label"], x=df_j["total"], name="Sent",
+                orientation="h", marker_color="#DBEAFE", marker_line_width=0,
+            ))
+            fig2.add_trace(go.Bar(
+                y=df_j["label"], x=df_j["replied"], name="Replied",
+                orientation="h", marker_color="#22C55E", marker_line_width=0,
+            ))
             fig2.update_layout(
-                template="plotly_white", height=240, barmode="overlay",
+                template="plotly_white", height=260, barmode="overlay",
                 margin=dict(l=0, r=0, t=10, b=0),
                 legend=dict(orientation="h", y=1.08, x=0),
                 xaxis=dict(showgrid=True, gridcolor="#F1F5F9", title=None),
@@ -472,91 +528,51 @@ with tab_dash:
         else:
             st.info("No campaign data yet.")
 
+    # ── Row 4: Campaign stats table ──────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
-
-    col_table, col_feed = st.columns([3, 2], gap="large")
-
-    with col_table:
-        st.markdown('<div class="sec-title" style="font-size:15px">Campaign Summary</div>',
-                    unsafe_allow_html=True)
-        if jstats:
-            rows_html = ""
-            for s in jstats:
-                rc = "#16A34A" if s["response_rate"] >= 30 else "#EA580C" if s["response_rate"] >= 10 else "#6B7280"
-                jn = (s["job"][:33] + "…") if len(s["job"]) > 33 else s["job"]
-                rows_html += f"""<tr>
-                    <td style="padding:9px 12px;font-size:13px;font-weight:600;color:#1E293B">{jn}</td>
-                    <td style="padding:9px 12px;font-size:12px;color:#64748B">{s.get('company','—')}</td>
-                    <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:#2563EB">{s['total']}</td>
-                    <td style="padding:9px 12px;text-align:center;font-size:13px;color:#16A34A">{s['replied']}</td>
-                    <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:{rc}">{s['response_rate']}%</td>
-                    <td style="padding:9px 12px;text-align:center;font-size:12px;color:#7C3AED">{s['interested']}</td>
-                </tr>"""
-            st.markdown(f"""
-            <div style="border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;background:white;min-width:420px">
-                <thead><tr style="background:#F8FAFC;border-bottom:1px solid #E2E8F0">
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Job / Campaign</th>
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Company</th>
-                    <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Sent</th>
-                    <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Replied</th>
-                    <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Response %</th>
-                    <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Interested</th>
-                </tr></thead>
-                <tbody>{rows_html}</tbody>
-            </table></div>""", unsafe_allow_html=True)
-        else:
-            st.info("No campaign data yet.")
-
-    with col_feed:
-        st.markdown('<div class="sec-title" style="font-size:15px">Recent Activity</div>',
-                    unsafe_allow_html=True)
-        activity = db.get_recent_activity(12)
-        if activity:
-            for item in activity:
-                is_out = item["direction"] == "outbound"
-                icon   = "📤" if is_out else "📥"
-                action = "Sent to" if is_out else "Reply from"
-                label  = (
-                    f"{icon}  {action} · {item['email']}"
-                    f"  ·  {item['job']}  ·  {fmt_dt(item['created_at'], short=True)}"
-                )
-                with st.expander(label, expanded=False):
-                    subj = item.get("subject") or "—"
-                    st.markdown(
-                        f"<p style='font-size:12px;margin:0'>"
-                        f"<span style='color:#94A3B8'>Subject:</span> "
-                        f"<span style='color:#1E293B;font-weight:600'>{subj}</span></p>",
-                        unsafe_allow_html=True,
-                    )
-                    if item.get("body"):
-                        cls = "bubble-out" if is_out else "bubble-in"
-                        lbl = "Recruiter" if is_out else "Candidate"
-                        st.markdown(
-                            f'<div class="{cls}"><div class="bubble-label">{lbl}</div>'
-                            f'<div class="bubble-body">{item["body"]}</div></div>',
-                            unsafe_allow_html=True,
-                        )
-        else:
-            st.info("No recent activity.")
+    st.markdown('<div class="sec-title" style="font-size:15px">Campaign Performance Summary</div>',
+                unsafe_allow_html=True)
+    if jstats:
+        rows_html = ""
+        for s in jstats:
+            rc = "#16A34A" if s["response_rate"] >= 30 else "#EA580C" if s["response_rate"] >= 10 else "#6B7280"
+            jn = (s["job"][:36] + "…") if len(s["job"]) > 36 else s["job"]
+            rows_html += f"""<tr>
+                <td style="padding:9px 12px;font-size:13px;font-weight:600;color:#1E293B">{jn}</td>
+                <td style="padding:9px 12px;font-size:12px;color:#64748B">{s.get('company', _EMPTY)}</td>
+                <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:#2563EB">{s['total']}</td>
+                <td style="padding:9px 12px;text-align:center;font-size:13px;color:#16A34A">{s['replied']}</td>
+                <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:{rc}">{s['response_rate']}%</td>
+                <td style="padding:9px 12px;text-align:center;font-size:12px;color:#7C3AED">{s['interested']}</td>
+            </tr>"""
+        st.markdown(f"""
+        <div style="border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;background:white;min-width:420px">
+            <thead><tr style="background:#F8FAFC;border-bottom:1px solid #E2E8F0">
+                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Campaign</th>
+                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Company</th>
+                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Sent</th>
+                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Replied</th>
+                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Reply %</th>
+                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Interested</th>
+            </tr></thead>
+            <tbody>{rows_html}</tbody>
+        </table></div>""", unsafe_allow_html=True)
+    else:
+        st.info("No campaign data yet.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 2  ·  SENT EMAILS
+# TAB 2  ·  SENT EMAILS  (paginated)
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_sent:
-    st.markdown('<div class="sec-title">Sent Emails</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="sec-sub">All outbound recruiter emails · expand a row to preview, then open "Read full email"</div>',
-        unsafe_allow_html=True,
-    )
+    _section_header("Sent Emails", "All outbound recruiter emails · 25 per page · click a row for full details")
 
-    # ── Single cached fetch; all filtering in Python ──────────────────────────
     all_sent_raw = db.get_sent_emails()
-    all_jobs_s   = sorted({e["job"] for e in all_sent_raw if e["job"] != "—"})
+    all_jobs_s   = sorted({e["job"] for e in all_sent_raw if e["job"] != _EMPTY})
 
     f1, f2, f3 = st.columns([3, 2, 1])
-    search_s   = f1.text_input("Search", placeholder="Search by email, job, or subject…",
+    search_s   = f1.text_input("Search", placeholder="Recipient, campaign, or subject…",
                                 label_visibility="collapsed", key="sent_search")
     job_sel_s  = f2.selectbox("Campaign", ["All Campaigns"] + all_jobs_s,
                                label_visibility="collapsed", key="sent_job")
@@ -568,56 +584,54 @@ with tab_sent:
 
     sent = [
         e for e in all_sent_raw
-        if (not search_s or search_s.lower() in f"{e['candidate']} {e['job']} {e.get('subject','')}".lower())
+        if (not search_s or search_s.lower() in
+            f"{e['candidate']} {e['job']} {e.get('subject', '')}".lower())
         and (job_sel_s == "All Campaigns" or e["job"] == job_sel_s)
         and _after_cutoff(e.get("sent_at"), cutoff)
     ]
 
+    filter_sig_s = f"{search_s}|{job_sel_s}|{days_sel_s}"
+    page_items_s, page_s, total_pages_s = _paginate(sent, "sent_page", filter_sig_s)
+
+    total_s = len(sent)
     st.markdown(
         f"<p style='font-size:12px;color:#64748B;margin:6px 0 14px'>"
-        f"Showing <b>{len(sent)}</b> email{'s' if len(sent) != 1 else ''}</p>",
+        f"<b>{total_s}</b> email{'s' if total_s != 1 else ''} found</p>",
         unsafe_allow_html=True,
     )
 
     if not sent:
         st.info("No sent emails match your filters.")
     else:
-        for email in sent:
-            opened_badge = badge("badge-opened", "Opened") if email["opened"] else badge("badge-sent", "Sent")
-            cs_badge     = conv_badge(email["conv_status"])
-            label = f"📤  {email['candidate']}  ·  {email['job']}  ·  {fmt_dt(email['sent_at'], short=True)}"
+        for email in page_items_s:
+            preview  = _body_preview(email.get("body", ""), max_chars=140)
+            date_str = fmt_dt(email["sent_at"], short=True)
+            label = f"📤  {email['candidate']}  ·  {date_str}"
+            if preview:
+                label += f"  —  {preview}"
 
             with st.expander(label, expanded=False):
-                # ── First-line body preview ────────────────────────────────
-                preview = _body_preview(email.get("body", ""))
-                if preview:
-                    st.markdown(
-                        f'<div class="body-preview">✉ {preview}</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
                 row1, row2 = st.columns([3, 1])
                 with row1:
+                    opened_b = badge("badge-opened", "Opened") if email["opened"] else badge("badge-sent", "Sent")
                     st.markdown(f"""
-                    <div style="margin-bottom:8px">
+                    <div style="margin-bottom:6px">
                         <span style="font-size:12px;color:#64748B">To:</span>
                         <span style="font-size:13px;font-weight:600;color:#1E293B;margin-left:6px">{email['candidate']}</span>
                     </div>
                     <div style="margin-bottom:4px">
                         <span style="font-size:12px;color:#64748B">Campaign:</span>
                         <span style="font-size:13px;color:#334155;margin-left:6px">{email['job']}</span>
-                        {(' · ' + email['company']) if email['company'] != '—' else ''}
+                        {(' · ' + email['company']) if email['company'] != _EMPTY else ''}
                     </div>
-                    <div style="margin-bottom:10px">
+                    <div>
                         <span style="font-size:12px;color:#64748B">Subject:</span>
-                        <span style="font-size:13px;color:#334155;margin-left:6px">{email['subject'] or '—'}</span>
+                        <span style="font-size:13px;color:#334155;margin-left:6px">{email['subject'] or _EMPTY}</span>
                     </div>
                     """, unsafe_allow_html=True)
                 with row2:
                     st.markdown(
-                        f"<div style='text-align:right'>{opened_badge}&nbsp;&nbsp;{cs_badge}</div>",
+                        f"<div style='text-align:right'>{opened_b}&nbsp;&nbsp;{conv_badge(email['conv_status'])}</div>",
                         unsafe_allow_html=True,
                     )
                     st.markdown(
@@ -625,71 +639,68 @@ with tab_sent:
                         unsafe_allow_html=True,
                     )
 
-                # ── Full email in nested expander ──────────────────────────
                 if email.get("body"):
+                    st.markdown('<hr class="divider">', unsafe_allow_html=True)
                     with st.expander("Read full email", expanded=False):
                         st.markdown(
-                            f'<div class="bubble-out"><div class="bubble-label">Sent Message</div>'
-                            f'<div class="bubble-body">{email["body"]}</div></div>',
+                            _bubble_html("bubble-out", "Sent Message", email["body"]),
                             unsafe_allow_html=True,
                         )
 
+                conv_id = email.get("conversation_id")
+                if conv_id:
+                    with st.expander("View conversation thread", expanded=False):
+                        _render_thread(db.get_conversation_thread(conv_id))
+
+        _pagination_controls(page_s, total_pages_s, "sent_page", total_s)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 3  ·  REPLIES / INCOMING
+# TAB 3  ·  REPLIES / INCOMING  (paginated)
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_inbox:
-    st.markdown('<div class="sec-title">Replies & Incoming</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="sec-sub">All inbound candidate replies · expand a row, then open "View conversation thread"</div>',
-        unsafe_allow_html=True,
-    )
+    _section_header("Replies & Incoming", "All inbound candidate replies · 25 per page · click a row to view thread")
 
-    # ── Single cached fetch; all filtering in Python ──────────────────────────
     all_inbox_raw = db.get_incoming_emails()
 
     f1i, f2i = st.columns([4, 1])
     search_i = f1i.text_input("Search replies",
-                               placeholder="Search by sender, subject, or content…",
+                               placeholder="Sender, subject, or content…",
                                label_visibility="collapsed", key="inbox_search")
     days_i   = f2i.selectbox("Period", list(days_map.keys()),
                               label_visibility="collapsed", key="inbox_days")
 
-    days_ni = days_map[days_i]
+    days_ni  = days_map[days_i]
     cutoff_i = (datetime.now(timezone.utc) - timedelta(days=days_ni)) if days_ni else None
 
     inbox = [
         r for r in all_inbox_raw
         if (not search_i or search_i.lower() in
-            f"{r['from_email']} {r['job']} {r.get('subject','')} {r.get('preview','')}".lower())
+            f"{r['from_email']} {r['job']} {r.get('subject', '')} {r.get('preview', '')}".lower())
         and _after_cutoff(r.get("received_at"), cutoff_i)
     ]
 
+    filter_sig_i = f"{search_i}|{days_i}"
+    page_items_i, page_i, total_pages_i = _paginate(inbox, "inbox_page", filter_sig_i)
+
+    total_i = len(inbox)
     st.markdown(
         f"<p style='font-size:12px;color:#64748B;margin:6px 0 14px'>"
-        f"Showing <b>{len(inbox)}</b> repl{'ies' if len(inbox) != 1 else 'y'}</p>",
+        f"<b>{total_i}</b> repl{'ies' if total_i != 1 else 'y'} found</p>",
         unsafe_allow_html=True,
     )
 
     if not inbox:
         st.info("No replies match your filters.")
     else:
-        for reply in inbox:
-            mb    = match_badge(reply["matched_by"])
-            label = (
-                f"📥  {reply['from_email']}  ·  {reply['job']}"
-                f"  ·  {fmt_dt(reply['received_at'], short=True)}"
-            )
+        for reply in page_items_i:
+            preview_text = _body_preview(reply.get("body", "") or reply.get("preview", ""), max_chars=140)
+            date_str = fmt_dt(reply["received_at"], short=True)
+            label = f"📥  {reply['from_email']}  ·  {date_str}"
+            if preview_text:
+                label += f"  —  {preview_text}"
+
             with st.expander(label, expanded=False):
-                # ── First-line body preview ────────────────────────────────
-                if reply.get("preview"):
-                    st.markdown(
-                        f'<div class="body-preview">✉ {reply["preview"]}</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
                 row1, row2 = st.columns([3, 1])
                 with row1:
                     st.markdown(f"""
@@ -703,12 +714,14 @@ with tab_inbox:
                     </div>
                     <div>
                         <span style="font-size:12px;color:#64748B">Subject:</span>
-                        <span style="font-size:13px;color:#334155;margin-left:6px">{reply['subject'] or '—'}</span>
+                        <span style="font-size:13px;color:#334155;margin-left:6px">{reply['subject'] or _EMPTY}</span>
                     </div>
                     """, unsafe_allow_html=True)
                 with row2:
                     st.markdown(
-                        f"<div style='text-align:right'>{mb}&nbsp;&nbsp;{conv_badge(reply['conv_status'])}</div>",
+                        f"<div style='text-align:right'>"
+                        f"{match_badge(reply['matched_by'])}&nbsp;&nbsp;{conv_badge(reply['conv_status'])}"
+                        f"</div>",
                         unsafe_allow_html=True,
                     )
                     st.markdown(
@@ -716,37 +729,32 @@ with tab_inbox:
                         unsafe_allow_html=True,
                     )
 
-                # ── Full thread in nested expander ─────────────────────────
                 conv_id = reply.get("conversation_id")
                 if conv_id:
                     with st.expander("View conversation thread", expanded=False):
                         _render_thread(db.get_conversation_thread(conv_id))
-                else:
+                elif reply.get("body"):
                     with st.expander("View message", expanded=False):
                         st.markdown(
-                            f'<div class="bubble-in"><div class="bubble-label">Candidate Message</div>'
-                            f'<div class="bubble-body">{reply["body"]}</div></div>',
+                            _bubble_html("bubble-in", "Candidate Message", reply["body"]),
                             unsafe_allow_html=True,
                         )
+
+        _pagination_controls(page_i, total_pages_i, "inbox_page", total_i)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 4  ·  CONVERSATIONS  (replied-only)
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_convs:
-    st.markdown('<div class="sec-title">Conversations</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="sec-sub">Conversations where the candidate has replied · expand to view the full thread</div>',
-        unsafe_allow_html=True,
-    )
+    _section_header("Conversations", "Conversations where the candidate has replied · expand to view the full thread")
 
-    # ── Single cached fetch of replied-only conversations ─────────────────────
     all_convs_raw = db.get_all_conversations(replied_only=True)
-    all_jobs_c    = sorted({c["job"] for c in all_convs_raw if c["job"] != "—"})
+    all_jobs_c    = sorted({c["job"] for c in all_convs_raw if c["job"] != _EMPTY})
 
     fc1, fc2 = st.columns([4, 2])
     search_c  = fc1.text_input("Search conversations",
-                                placeholder="Search by candidate email or campaign…",
+                                placeholder="Candidate email or campaign…",
                                 label_visibility="collapsed", key="conv_search")
     job_sel_c = fc2.selectbox("Campaign", ["All Campaigns"] + all_jobs_c,
                                label_visibility="collapsed", key="conv_job")
@@ -759,7 +767,7 @@ with tab_convs:
 
     st.markdown(
         f"<p style='font-size:12px;color:#64748B;margin:6px 0 14px'>"
-        f"Showing <b>{len(convs_list)}</b> replied conversation{'s' if len(convs_list) != 1 else ''}</p>",
+        f"<b>{len(convs_list)}</b> replied conversation{'s' if len(convs_list) != 1 else ''}</p>",
         unsafe_allow_html=True,
     )
 
@@ -777,7 +785,7 @@ with tab_convs:
                 with h1:
                     token_html = (
                         f'<span class="conv-token">{conv["reference_token"]}</span>'
-                        if conv["reference_token"] != "—" else ""
+                        if conv["reference_token"] != _EMPTY else ""
                     )
                     st.markdown(f"""
                     <div style="margin-bottom:6px">
@@ -787,7 +795,7 @@ with tab_convs:
                     <div style="margin-bottom:4px">
                         <span style="font-size:12px;color:#64748B">Campaign:</span>
                         <span style="font-size:13px;color:#334155;margin-left:6px">{conv['job']}</span>
-                        {(' · ' + conv['company']) if conv['company'] != '—' else ''}
+                        {(' · ' + conv['company']) if conv['company'] != _EMPTY else ''}
                     </div>
                     <div style="margin-top:6px">{token_html}</div>
                     """, unsafe_allow_html=True)
@@ -821,19 +829,17 @@ _DEFAULT_CANDIDATES = [
 ]
 
 with tab_compose:
-    st.markdown('<div class="sec-title">Compose & Test</div>', unsafe_allow_html=True)
+    _section_header("Compose & Test")
     st.markdown("""
     <div class="compose-notice">
         ⚠️  <strong>Testing only</strong> — This tab calls the live AI backend.
         Real campaign emails are sent from the production platform, not here.
     </div>""", unsafe_allow_html=True)
 
-    # ── Job details ───────────────────────────────────────────────────────────
     st.markdown("#### Job / Campaign Details")
     col_a, col_b = st.columns(2)
     job_title     = col_a.text_input("Job Title *",     placeholder="e.g. Data Analyst")
-    company       = "Atypical Advantage"  # col_b.text_input("Company *",       placeholder="e.g. Acme Corp")
-    col_c, col_d  = st.columns(2)
+    company       = "Atypical Advantage"
     location      = "Remote"
     contact_email = "hiring@atypicaladvantage.in"
     job_desc      = st.text_area("Job Description *",
@@ -841,7 +847,6 @@ with tab_compose:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Recipients — checklist + optional custom rows ─────────────────────────
     st.markdown("#### Recipients")
     st.caption("Select pre-configured contacts. Use the counter below to add custom recipients.")
 
@@ -884,13 +889,10 @@ with tab_compose:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Generate ──────────────────────────────────────────────────────────────
     if st.button("🤖  Generate AI Emails", type="primary", use_container_width=True):
         errors: list[str] = []
         if not job_title.strip():
             errors.append("Job Title is required.")
-        if not company.strip():
-            errors.append("Company is required.")
         if not job_desc.strip():
             errors.append("Job Description is required.")
         if not all_recipients:
@@ -904,9 +906,9 @@ with tab_compose:
                 "job": {
                     "title":         job_title.strip(),
                     "description":   job_desc.strip(),
-                    "company_name":  company.strip(),
-                    "location":      location.strip(),
-                    "contact_email": contact_email.strip(),
+                    "company_name":  company,
+                    "location":      location,
+                    "contact_email": contact_email,
                 },
                 "candidates": [
                     {
@@ -915,7 +917,7 @@ with tab_compose:
                         "email":                     c["email"],
                         "work_experience":            c.get("work_experience", "0"),
                         "summary":                   c.get("summary", ""),
-                        "location_preference":        location.strip(),
+                        "location_preference":        location,
                         "disability":                "None",
                         "educational_qualification": "Not specified",
                     }
@@ -936,7 +938,6 @@ with tab_compose:
                     with st.expander("Skipped candidates"):
                         st.json(result["skipped"])
 
-    # ── Review & edit ─────────────────────────────────────────────────────────
     if st.session_state.get("generated_emails"):
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("#### Review & Edit Emails")
@@ -969,10 +970,10 @@ with tab_compose:
                     rows = []
                     for d in details:
                         rows.append({
-                            "Recipient":   d.get("email", "—"),
+                            "Recipient":   d.get("email", _EMPTY),
                             "Sent":        "✅ Yes" if d.get("sent")  else "❌ No",
                             "Saved to DB": "✅ Yes" if d.get("saved") else "❌ No",
-                            "Note":        d.get("error") or d.get("skip_reason") or "—",
+                            "Note":        d.get("error") or d.get("skip_reason") or _EMPTY,
                         })
                     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
                 st.session_state["generated_emails"] = []
