@@ -528,38 +528,38 @@ with tab_dash:
         else:
             st.info("No campaign data yet.")
 
-    # ── Row 4: Campaign stats table ──────────────────────────────────────────
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown('<div class="sec-title" style="font-size:15px">Campaign Performance Summary</div>',
-                unsafe_allow_html=True)
-    if jstats:
-        rows_html = ""
-        for s in jstats:
-            rc = "#16A34A" if s["response_rate"] >= 30 else "#EA580C" if s["response_rate"] >= 10 else "#6B7280"
-            jn = (s["job"][:36] + "…") if len(s["job"]) > 36 else s["job"]
-            rows_html += f"""<tr>
-                <td style="padding:9px 12px;font-size:13px;font-weight:600;color:#1E293B">{jn}</td>
-                <td style="padding:9px 12px;font-size:12px;color:#64748B">{s.get('company', _EMPTY)}</td>
-                <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:#2563EB">{s['total']}</td>
-                <td style="padding:9px 12px;text-align:center;font-size:13px;color:#16A34A">{s['replied']}</td>
-                <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:{rc}">{s['response_rate']}%</td>
-                <td style="padding:9px 12px;text-align:center;font-size:12px;color:#7C3AED">{s['interested']}</td>
-            </tr>"""
-        st.markdown(f"""
-        <div style="border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;background:white;min-width:420px">
-            <thead><tr style="background:#F8FAFC;border-bottom:1px solid #E2E8F0">
-                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Campaign</th>
-                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Company</th>
-                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Sent</th>
-                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Replied</th>
-                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Reply %</th>
-                <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Interested</th>
-            </tr></thead>
-            <tbody>{rows_html}</tbody>
-        </table></div>""", unsafe_allow_html=True)
-    else:
-        st.info("No campaign data yet.")
+    # # ── Row 4: Campaign stats table ──────────────────────────────────────────
+    # st.markdown("<br>", unsafe_allow_html=True)
+    # st.markdown('<div class="sec-title" style="font-size:15px">Campaign Performance Summary</div>',
+    #             unsafe_allow_html=True)
+    # if jstats:
+    #     rows_html = ""
+    #     for s in jstats:
+    #         rc = "#16A34A" if s["response_rate"] >= 30 else "#EA580C" if s["response_rate"] >= 10 else "#6B7280"
+    #         jn = (s["job"][:36] + "…") if len(s["job"]) > 36 else s["job"]
+    #         rows_html += f"""<tr>
+    #             <td style="padding:9px 12px;font-size:13px;font-weight:600;color:#1E293B">{jn}</td>
+    #             <td style="padding:9px 12px;font-size:12px;color:#64748B">{s.get('company', _EMPTY)}</td>
+    #             <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:#2563EB">{s['total']}</td>
+    #             <td style="padding:9px 12px;text-align:center;font-size:13px;color:#16A34A">{s['replied']}</td>
+    #             <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:{rc}">{s['response_rate']}%</td>
+    #             <td style="padding:9px 12px;text-align:center;font-size:12px;color:#7C3AED">{s['interested']}</td>
+    #         </tr>"""
+    #     st.markdown(f"""
+    #     <div style="border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;overflow-x:auto">
+    #     <table style="width:100%;border-collapse:collapse;background:white;min-width:420px">
+    #         <thead><tr style="background:#F8FAFC;border-bottom:1px solid #E2E8F0">
+    #             <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Campaign</th>
+    #             <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Company</th>
+    #             <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Sent</th>
+    #             <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Replied</th>
+    #             <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Reply %</th>
+    #             <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748B;letter-spacing:.5px;text-transform:uppercase">Interested</th>
+    #         </tr></thead>
+    #         <tbody>{rows_html}</tbody>
+    #     </table></div>""", unsafe_allow_html=True)
+    # else:
+    #     st.info("No campaign data yet.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
